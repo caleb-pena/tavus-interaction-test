@@ -1,0 +1,189 @@
+<html>
+  <script crossorigin src="https://unpkg.com/@daily-co/daily-js"></script>
+  <body>
+    <style>
+      #toast {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #323232;
+        color: #fff;
+        text-align: center;
+        border-radius: 8px;
+        padding: 16px;
+        position: fixed;
+        z-index: 9999;
+        left: 50%;
+        bottom: 30px;
+        font-size: 17px;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.5s, bottom 0.5s;
+      }
+
+      #toast.show {
+        visibility: visible;
+        opacity: 1;
+        bottom: 50px;
+      }
+    </style>
+
+    <h2>Set Conversation ID</h2>
+    <input type="text" id="conversationIdInput" placeholder="Enter Conversation ID">
+    <button onclick="setConversationId()">Set Conversation ID</button>
+
+    <h2>Echo Interaction</h2>
+    <p>By broadcasting this event, you are able to tell the replica what to exactly say. Anything that is passed in the text field will be spoken by the replica.</p>
+    <input type="text" id="echoInteractionInput" placeholder="Enter your message">
+    <button onclick="echoInteraction()">Echo interaction</button>
+    <br />
+
+    <h2>Text Respond Interaction</h2>
+    <p>By broadcasting this event, you are able to send text that the replica will to respond to. The text you provide in the event will essentially be treated as the user transcript, and will be responded to as if the user had uttered those phrases during conversation.</p>
+    <input type="text" id="textRespondInteractionInput" placeholder="Enter your message">
+    <button onclick="textRespondInteraction()">Text Respond Interaction</button>
+    <br />
+
+    <h2>Sensitivity Interaction</h2>
+    <p>By broadcasting this event, you are able to update the VAD (Voice Activity Detection) sensitivity of the replica in two dimensions.</p>
+    <button onclick="sensitivityInteraction('low')">Low</button>
+    <button onclick="sensitivityInteraction('medium')">Medium</button>
+    <button onclick="sensitivityInteraction('high')">High</button>
+    <br />
+
+    <h2>Interrupt Interaction</h2>
+    <p>By broadcasting this event, you are able to externally send interruptions for the replica to stop talking. This is commonly used in combination with Text Echo Interactions.</p>
+    <button onclick="interruptInteraction()">Interrupt Interaction</button>
+    <br />
+
+    <h2>Overwrite Conversational Context Interaction</h2>
+    <p>By broadcasting this event, you are able to overwrite the conversational_context that the replica uses to generate responses.</p>
+    <input type="text" id="overwriteConversationalContextInteractionInput" placeholder="Enter your message">
+    <button onclick="overwriteConversationalContextInteraction()">Overwrite Conversational Context Interaction</button>
+    <br />
+
+    <div id="toast"></div>
+
+    <script>
+
+      function setConversationId() {
+        const input = document.getElementById('conversationIdInput');
+        const newId = input.value.trim();
+        if (newId) {
+          CONVERSATION_ID = newId;
+          call = window.Daily.createFrame();
+          call.on('app-message', (event) => {
+            console.log('app-message', event);
+          });
+          call.join({ url: `https://tavus.daily.co/${CONVERSATION_ID}` });
+          console.log("Set CONVERSATION_ID to", CONVERSATION_ID);
+          showToast("Conversation ID set successfully!");
+        } else {
+          showToast("Please enter a valid Conversation ID.");
+        }
+      }
+
+      function echoInteraction() {
+        const messageInput = document.getElementById('echoInteractionInput');
+        const message = messageInput.value;
+        if (message) {
+          const interaction = {
+            "message_type": "conversation",
+            "event_type": "conversation.echo",
+            "conversation_id": `${CONVERSATION_ID}`,
+            "properties": {
+              "text": `${message}`
+            }
+          }
+          const hi = call.sendAppMessage(interaction, '*');
+          console.log("ECHO INTERACTION");
+          console.log('Sending message: ', hi);
+          console.log('Sent message: ', interaction);
+          showToast("Echo Interaction Success!");
+          messageInput.value = '';
+        }
+      }
+
+      function textRespondInteraction() {
+        const messageInput = document.getElementById('textRespondInteractionInput');
+        const message = messageInput.value;
+        if (message) {
+          const interaction = {
+            "message_type": "conversation",
+            "event_type": "conversation.respond",
+            "conversation_id": `${CONVERSATION_ID}`,
+            "properties": {
+              "text": `${message}`
+            }
+          }
+          const hi = call.sendAppMessage(interaction, '*');
+          console.log("TEXT RESPOND INTERACTION");
+          console.log('Sending message: ', hi);
+          console.log('Sent message: ', interaction);
+          showToast("Text Respond Interaction Success!");
+          messageInput.value = '';
+        }
+      }
+
+      function sensitivityInteraction(input) {
+        const interaction = {
+          "message_type": "conversation",
+          "event_type": "conversation.sensitivity",
+          "conversation_id": `${CONVERSATION_ID}`,
+          "properties": {
+            "participant_pause_sensitivity": `${input}`,
+            "participant_interrupt_sensitivity": `${input}`
+          }
+        }
+        const hi = call.sendAppMessage(interaction, '*');
+        console.log("SENSITIVITY INTERACTION");
+        console.log('Sending message: ', hi);
+        console.log('Sent message: ', interaction);
+        showToast("Sensitivity Interaction Success!");
+      }
+
+      function interruptInteraction() {
+        const interaction = {
+          "message_type": "conversation",
+          "event_type": "conversation.interrupt",
+          "conversation_id": `${CONVERSATION_ID}`
+        }
+        const hi = call.sendAppMessage(interaction, '*');
+        console.log("INTERRUPT INTERACTION");
+        console.log('Sending message: ', hi);
+        console.log('Sent message: ', interaction);
+        showToast("Interrupt Interaction Success!");
+      }
+
+      function overwriteConversationalContextInteraction() {
+        const messageInput = document.getElementById('overwriteConversationalContextInteractionInput');
+        const message = messageInput.value;
+        if (message) {
+          const interaction = {
+            "message_type": "conversation",
+            "event_type": "conversation.overwrite_llm_context",
+            "conversation_id": `${CONVERSATION_ID}`,
+            "properties": {
+              "context": `${message}`
+            }
+          }
+          const hi = call.sendAppMessage(interaction, '*');
+          console.log("OVERWRITE CONVERSATIONAL CONTEXT INTERACTION");
+          console.log('Sending message: ', hi);
+          console.log('Sent message: ', interaction);
+          showToast("Overwrite Conversational Context Interaction Success!");
+          messageInput.value = '';
+        }
+      }
+    
+      function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.innerText = message;
+        toast.className = "show";
+        setTimeout(() => {
+          toast.className = toast.className.replace("show", "");
+        }, 3000);
+      }
+
+    </script>
+  </body>
+</html>
